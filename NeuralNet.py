@@ -12,7 +12,8 @@ class Neuron:
 	# constructor for single neuron
 	def __init__(self, numInput):
 		self.numInput = numInput # length of input vectors
-		self.weights = [random.uniform(-1.0, 1.0) for i in range(numInput + 1)] # rand weights + threshold
+		#self.weights = [random.uniform(-1, 1) for i in range(numInput + 1)] # rand weights + threshold
+		self.weights = [0]*(numInput + 1)
 	
 # class defines single neuron layers	
 class NeuronLayer:
@@ -110,16 +111,16 @@ class NeuralNet:
 				# add threshold
 				netInput += self.layers[i].neurons[j].weights[-1] * -1
 				
+				print(netInput)
 				# append neuron response to output
 				output.append(self.sigmoid(netInput))
 				
 				weight = 0
-					
 		return output
 	
 	# sigmoid response curve
 	def sigmoid(self, activation):
-		return 1 / (1 + math.exp(-1 * activation))
+		return 2 / (1 + math.exp(-1 * activation)) - 1
 		
 		
 		

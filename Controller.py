@@ -5,69 +5,107 @@
 
 from tkinter import *
 from Unit import Unit
+import Common
+import random
+from GeneticAlg import *
 
-# on keypress change unit velocity
-def keyPressed(event):
-	canvas = event.widget.canvas
-	
-	if (event.keysym == "Up"):
-		canvas.data["player"].accY(-1)
-	elif (event.keysym == "Down"):
-		canvas.data["player"].accY(1)
-	elif (event.keysym == "Left"):
-		canvas.data["player"].accX(-1)
-	elif (event.keysym == "Right"):
-		canvas.data["player"].accX(1)
+class Controller:
 
-# advances game state
-def timerFired(canvas):
-	moveUnit(canvas)
-	delay = 50 # milliseconds
-	canvas.after(delay, timerFired, canvas)
-	
-# erase and redraw unit in new position
-def moveUnit(canvas):
-	#canvas.data["player"].displayState()
-	canvas.data["player"].advance()
-	
-	left = canvas.data["player"].x - 5
-	right = canvas.data["player"].x + 5
-	top = canvas.data["player"].y - 5
-	bottom = canvas.data["player"].y + 5
-	
-	canvas.delete(ALL)
-	canvas.create_oval(left, top, right, bottom, fill="red")
+	# Input:
+	# Output:
+	# Description:
+	def __init__(self):
+		# create root and canvas
+		root = Tk()
+		self.canvas = Canvas(root, width=Common.boardWidth, height=Common.boardHeight)
+		self.canvas.pack()
+		root.canvas = self.canvas.canvas = self.canvas
 		
-# initializes app
-def init(canvas):
-	canvas.data["player"] = Unit(100, 100, 0, 0, 720, 540)
-	return
-
-# main function initializes and launches app
-def run():
-	# create root and canvas
-	root = Tk()
-	canvas = Canvas(root, width=720, height=540)
-	canvas.pack()
+		# create units
+		self.player = Unit(100, 100, 0, 0, Common.boardWidth, Common.boardHeight)
+		self.enemies = [Unit(random.uniform(0,Common.boardWidth),
+									   random.uniform(0,Common.boardHeight),
+									   0, 0, Common.boardWidth, Common.boardHeight)
+								for i in range(Common.numEnemies)]
+								
+		# create AI
+		for e in self.enemies: 
+			e.createBrain()	# give each enemy a NN
+		
+		# create weights with GenAlg
+		self.genAlg = GenAlg(Common.numEnemies, Common.mutRate, Common.crossRate, 
+										self.enemies[0].neuralNet.getNumWeights())
+										
+		# put weights into NNs
+		for i in range(len(self.enemies)):
+			print(str(self.genAlg.population[i].weights))
+			self.enemies[i].neuralNet.putWeights(self.genAlg.population[i].weights)
+		
+		# wire events and start loop
+		root.bind("<Key>", self.keyPressed)
+		self.timerFired()
+		root.mainloop()
+		
+	# Input:
+	#		event - tkinter keypress even to process
+	# Output:
+	#		none
+	# Description:
+	#		Accepts user arrow-key input and translates to unit acceleration
+	def keyPressed(self, event):
+		if (event.keysym == "Up"):
+			self.player.accY(-1)
+		elif (event.keysym == "Down"):
+			self.player.accY(1)
+		elif (event.keysym == "Left"):
+			self.player.accX(-1)
+		elif (event.keysym == "Right"):
+			self.player.accX(1)
 	
-	# store canvas in root and itself
-	root.canvas = canvas.canvas = canvas
+	# Input:
+	#		canvas - tkinter game canvas
+	# Output:
+	#		none
+	# Description:
+	#		Timer function calls functions to advance game state
+	def timerFired(self):
+		self.moveUnits()
+		delay = 50 # milliseconds
+		self.canvas.after(delay, self.timerFired)
+		
+	# Input:
+	#		canvas - tkinter game canvas
+	# Output:
+	#		none
+	# Description:
+	#		calls functions to advance unit positions
+	def moveUnits(self):
+		# run update on all NNs
+		for e in self.enemies:
+			output = e.neuralNet.update([self.player.x, self.player.y])
+			e.accX(output[0])
+			e.accY(output[1])
 	
-	# set up data and initialize
-	canvas.data = { }
-	init(canvas)
+		# advance player
+		self.player.advance()
+		(l,r,t,b) = self.player.getDim()
+		
+		# advance enemies
+		for i in range(Common.numEnemies):
+			self.enemies[i].advance()
+		
+		self.canvas.delete(ALL)
+		
+		# draw new state
+		self.canvas.create_oval(l, t, r, b, fill="blue")
+		
+		for i in range(Common.numEnemies):
+			(l,r,t,b) = self.enemies[i].getDim()
+			self.canvas.create_rectangle(l, t, r, b, fill="red")
+			
 	
-	# bind keypress
-	root.bind("<Key>", keyPressed)
 	
-	# fire timer
-	timerFired(canvas)
-	
-	# run app
-	root.mainloop()
-
-# call main
-run()
+		
 
 
 

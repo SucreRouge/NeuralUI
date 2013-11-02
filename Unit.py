@@ -3,6 +3,9 @@
 # Unit.py
 # Defines class for units in neural net demo
 
+from NeuralNet import NeuralNet
+import Common
+
 class Unit:
 
 	# constructor
@@ -48,6 +51,14 @@ class Unit:
 		if (abs(self.vy + dy) <= self.maxVel):
 			self.vy = self.vy + dy
 			
+	# return dimensions for drawing this unit
+	def getDim(self):
+		# return (left right top bottom)
+		return (self.x - 5, self.x + 5, self.y - 5, self.y + 5)
+		
+	def createBrain(self):
+		self.neuralNet = NeuralNet(Common.numInput, Common.numOutput, 
+												Common.numHiddenLyr, Common.numNrnPerHiddenLyr)
 			
 			
 			
