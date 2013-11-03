@@ -38,7 +38,6 @@ class Controller:
 										
 		# put weights into NNs
 		for i in range(len(self.enemies)):
-			print(str(self.genAlg.population[i].weights))
 			self.enemies[i].neuralNet.putWeights(self.genAlg.population[i].weights)
 		
 		# wire events and start loop
