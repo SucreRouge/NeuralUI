@@ -11,12 +11,12 @@ mutRate = 0.03
 crossRate = 0.7
 
 # neural net params
-numInput = 2
+numInput = 4
 numOutput = 2
 numHiddenLyr = 1
 numNrnPerHiddenLyr = 3
 
 # general params
-numEnemies = 5
+numEnemies = 10
 boardWidth = 720
 boardHeight = 540

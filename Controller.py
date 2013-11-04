@@ -8,6 +8,7 @@ from Unit import Unit
 import Common
 import random
 from GeneticAlg import *
+import math
 
 class Controller:
 
@@ -41,6 +42,7 @@ class Controller:
 			self.enemies[i].neuralNet.putWeights(self.genAlg.population[i].weights)
 		
 		# wire events and start loop
+		self.ticker = 0
 		root.bind("<Key>", self.keyPressed)
 		self.timerFired()
 		root.mainloop()
@@ -69,8 +71,12 @@ class Controller:
 	#		Timer function calls functions to advance game state
 	def timerFired(self):
 		self.moveUnits()
-		delay = 50 # milliseconds
-		self.canvas.after(delay, self.timerFired)
+		self.ticker += 1
+		if (self.ticker > 1500):
+			self.endEpoch()
+		else:
+			delay = 25 # milliseconds
+			self.canvas.after(delay, self.timerFired)
 		
 	# Input:
 	#		canvas - tkinter game canvas
@@ -81,7 +87,7 @@ class Controller:
 	def moveUnits(self):
 		# run update on all NNs
 		for e in self.enemies:
-			output = e.neuralNet.update([self.player.x, self.player.y])
+			output = e.neuralNet.update([self.player.x, self.player.y, e.x, e.y])
 			e.accX(output[0])
 			e.accY(output[1])
 	
@@ -101,6 +107,46 @@ class Controller:
 		for i in range(Common.numEnemies):
 			(l,r,t,b) = self.enemies[i].getDim()
 			self.canvas.create_rectangle(l, t, r, b, fill="red")
+			
+		self.adjustFitness()
+			
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Adjust enemy fitness based on behavior
+	def adjustFitness(self):
+		# loop through enemies and find closest to player
+		closest = 0
+		dist = Common.boardWidth + Common.boardHeight
+		for i in range(len(self.enemies)):
+			# if closer than current closest, replace closest
+			test = math.sqrt((self.player.x - self.enemies[i].x)**2 + (self.player.y - self.enemies[i].y)**2)
+			if ((test) < (dist)):
+				dist = test
+				closest = i
+				
+		# adjust fitness of corresponding genome
+		self.genAlg.population[closest].fitness += 1
+		
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		
+	def endEpoch(self):
+		# run GA on population of enemies
+		for c in self.genAlg.population:
+			print(c.fitness)
+			
+		self.genAlg.population = self.genAlg.evolve(self.genAlg.population)
+		
+		# start next epoch
+		self.ticker = 0
+		self.timerFired()
+	
 			
 	
 	
