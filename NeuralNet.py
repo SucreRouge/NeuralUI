@@ -17,8 +17,7 @@ class Neuron:
 	#		Constructor for Neuron object, initializes weights and threshold of 0
 	def __init__(self, numInput):
 		self.numInput = numInput 
-		#self.weights = [random.uniform(-1, 1) for i in range(numInput + 1)] # rand weights + threshold
-		self.weights = [0]*(numInput + 1)
+		self.weights = [random.uniform(-1, 1) for i in range(numInput + 1)] # rand weights + threshold
 	
 # class defines single neuron layers	
 class NeuronLayer:
@@ -93,10 +92,12 @@ class NeuralNet:
 					result.append(w)
 		return result
 		
-	# return total number of weights in network
 	# Input:
+	#		None
 	# Output:
+	#		result - count of all weights in this NN
 	# Description:
+	#		Return total number of weights in network
 	def getNumWeights(self):
 		result = 0
 		for lyr in self.layers:
@@ -105,10 +106,12 @@ class NeuralNet:
 					result+= 1
 		return result
 	
-	# replace weights with new ones
 	# Input:
+	#		weights - vector of weights to insert into this NN
 	# Output:
+	#		None
 	# Description:
+	#		Replace weights with new ones
 	def putWeights(self, weights):
 		cWeight = 0
 		for lyr in self.layers:

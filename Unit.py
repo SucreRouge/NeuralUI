@@ -8,7 +8,15 @@ import Common
 
 class Unit:
 
-	# constructor
+	# Input:
+	#		x, y - xy coord of unit
+	#		vx, vy - xy components to velocity
+	#		boardW - board width (used for edge detection)
+	#		boardH - ""
+	# Output:
+	#		None
+	# Description:
+	#		Constructor for game units
 	def __init__(self, x, y, vx, vy, boardW, boardH):
 		self.x = x
 		self.y = y
@@ -18,12 +26,13 @@ class Unit:
 		self.boardW = boardW
 		self.boardH = boardH
 		
-	# print unit state to console
-	def displayState(self):
-		print(str(self.x) + str(self.y) + str(self.vx) + str(self.vy))
 		
-	# called each time game timer fires, advances units position according
-	# to velocity
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Called each time game timer fires, advances units position according to velocity
 	def advance(self):
 		# new x pos
 		if (self.x + self.vx < 0):
@@ -41,24 +50,46 @@ class Unit:
 		else:
 			self.y = self.y + self.vy
 	
-	# adjust x velocity component according to given dx
+	# Input:
+	#		dx - amount to perturb x velocity by
+	# Output:
+	#		None
+	# Description:
+	#		Adjust x velocity component according to given dx
 	def accX(self, dx):
 		if (abs(self.vx + dx) <= self.maxVel):
 			self.vx = self.vx + dx
 	
-	# adjust y velocity component according to given dy
+	# Input:
+	#		dy - amount to perturb y velocity by
+	# Output:
+	#		None
+	# Description:
+	#		Adjust x velocity component according to given dy
 	def accY(self, dy):
 		if (abs(self.vy + dy) <= self.maxVel):
 			self.vy = self.vy + dy
 			
-	# return dimensions for drawing this unit
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Return dimensions for drawing this unit
 	def getDim(self):
 		# return (left right top bottom)
 		return (self.x - 5, self.x + 5, self.y - 5, self.y + 5)
 		
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Initialize this AI unit with a Neural Network controller
 	def createBrain(self):
 		self.neuralNet = NeuralNet(Common.numInput, Common.numOutput, 
 												Common.numHiddenLyr, Common.numNrnPerHiddenLyr)
+		self.fitness = 0
 			
 			
 			

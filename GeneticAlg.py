@@ -9,11 +9,15 @@ import Common
 class Chromosome:
 
 	# Input:
+	#		weights - vector of weights associated with this chromosome
+	#		fitness - optional value represents fitness of associated genome
 	# Output:
+	#		None
 	# Description:
-	def __init__(self, weights):
+	#		Constructor for Chromosome objects
+	def __init__(self, weights, fitness=0):
 		self.weights = weights
-		self.fitness = 0
+		self.fitness = fitness
 		
 	def __eq__(self, other):
 		return self.fitness == other.fitness
@@ -29,6 +33,7 @@ class GenAlg:
 	#     crossRate - probability two chromosomes will cross over in single epoch
 	#     numWeight - total number of weights in NN each Chromosome represents
 	# Output:
+	#		None
 	# Description:
 	#     Initializes state necessary to evolve population of NNs using genetic alg
 	def __init__(self, popSize, mutRate, crossRate, numWeight):
@@ -36,19 +41,6 @@ class GenAlg:
 		self.mutRate = mutRate
 		self.crossRate = crossRate
 		self.numWeight = numWeight
-		
-		self.createPop()
-		
-	# Input:
-	#		None
-	# Output:
-	#		None
-	# Description:
-	#     Initialize population of Chromosomes for each neural net, containing random weights
-	def createPop(self):
-		self.population = []
-		for i in range(self.popSize):
-			self.population.append(Chromosome([random.uniform(-1, 1) for j in range(self.numWeight)]))
 		
 	# Input:
 	#     c - chromosome to mutate
@@ -108,9 +100,10 @@ class GenAlg:
 			self.mutate(c4)
 			
 			# add to result new generation
-			result.append(c3)
-			result.append(c4)
+			result.append(Chromosome(c3.weights))
+			result.append(Chromosome(c4.weights))
 		
+		print(result)
 		return result
 		
 	# Input:

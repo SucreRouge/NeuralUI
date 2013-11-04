@@ -23,23 +23,22 @@ class Controller:
 		root.canvas = self.canvas.canvas = self.canvas
 		
 		# create units
-		self.player = Unit(100, 100, 0, 0, Common.boardWidth, Common.boardHeight)
+		self.player = Unit(random.uniform(0,Common.boardWidth),
+									random.uniform(0,Common.boardHeight), 
+									0, 0, Common.boardWidth, Common.boardHeight)
+		
 		self.enemies = [Unit(random.uniform(0,Common.boardWidth),
-									   random.uniform(0,Common.boardHeight),
-									   0, 0, Common.boardWidth, Common.boardHeight)
-								for i in range(Common.numEnemies)]
+									random.uniform(0,Common.boardHeight),
+									0, 0, Common.boardWidth, Common.boardHeight)
+									for i in range(Common.numEnemies)]
 								
 		# create AI
 		for e in self.enemies: 
 			e.createBrain()	# give each enemy a NN
 		
-		# create weights with GenAlg
+		# wrapper class for GA functionality
 		self.genAlg = GenAlg(Common.numEnemies, Common.mutRate, Common.crossRate, 
 										self.enemies[0].neuralNet.getNumWeights())
-										
-		# put weights into NNs
-		for i in range(len(self.enemies)):
-			self.enemies[i].neuralNet.putWeights(self.genAlg.population[i].weights)
 		
 		# wire events and start loop
 		self.ticker = 0
@@ -72,10 +71,10 @@ class Controller:
 	def timerFired(self):
 		self.moveUnits()
 		self.ticker += 1
-		if (self.ticker > 1500):
+		if (self.ticker > Common.epochLen):
 			self.endEpoch()
 		else:
-			delay = 25 # milliseconds
+			delay = Common.delay # milliseconds
 			self.canvas.after(delay, self.timerFired)
 		
 	# Input:
@@ -109,6 +108,7 @@ class Controller:
 			self.canvas.create_rectangle(l, t, r, b, fill="red")
 			
 		self.adjustFitness()
+		self.adjustFitness2()
 			
 	# Input:
 	#		None
@@ -117,31 +117,48 @@ class Controller:
 	# Description:
 	#		Adjust enemy fitness based on behavior
 	def adjustFitness(self):
-		# loop through enemies and find closest to player
-		closest = 0
+		closest = self.enemies[0]
 		dist = Common.boardWidth + Common.boardHeight
-		for i in range(len(self.enemies)):
-			# if closer than current closest, replace closest
-			test = math.sqrt((self.player.x - self.enemies[i].x)**2 + (self.player.y - self.enemies[i].y)**2)
-			if ((test) < (dist)):
+		for e in self.enemies:
+			test = math.sqrt((self.player.x - e.x)**2 + (self.player.y - e.y)**2)
+			if (test < dist):
 				dist = test
-				closest = i
+				closest = e
 				
-		# adjust fitness of corresponding genome
-		self.genAlg.population[closest].fitness += 1
+		e.fitness += 1
 		
 	# Input:
 	#		None
 	# Output:
 	#		None
 	# Description:
-	#		
+	#		Adjust enemy fitness based on behavior
+	def adjustFitness2(self):
+		# loop through enemies and find those close to player
+		for e in self.enemies:
+			if ((math.sqrt((self.player.x - e.x)**2 + (self.player.y - e.y)**2)) < 25):
+				# adjust unit's fitness
+				e.fitness += 1
+		
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Runs GA to evolve NN weights and restarts game
 	def endEpoch(self):
+		# print fitnesses
+		for e in self.enemies:
+			print(e.fitness)
+		print()
+		
 		# run GA on population of enemies
-		for c in self.genAlg.population:
-			print(c.fitness)
-			
-		self.genAlg.population = self.genAlg.evolve(self.genAlg.population)
+		population = [Chromosome(e.neuralNet.getWeights(), e.fitness) for e in self.enemies]
+		population = self.genAlg.evolve(population)
+		
+		# put weights into NNs
+		for i in range(Common.numEnemies):
+			self.enemies[i].neuralNet.putWeights(population[i].weights)
 		
 		# start next epoch
 		self.ticker = 0
