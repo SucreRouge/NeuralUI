@@ -129,7 +129,9 @@ class NeuralNet:
 	def update(self, input):
 		output = []
 		
-		if (len(input) != self.numInput): return output
+		if (len(input) != self.numInput):
+			print("Input does not match Neural Net.")
+			return output
 	
 		# for each layer
 		for i in range(len(self.layers)):

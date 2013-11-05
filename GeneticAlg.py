@@ -103,7 +103,6 @@ class GenAlg:
 			result.append(Chromosome(c3.weights))
 			result.append(Chromosome(c4.weights))
 		
-		print(result)
 		return result
 		
 	# Input:

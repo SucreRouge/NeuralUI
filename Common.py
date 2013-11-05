@@ -18,6 +18,7 @@ numNrnPerHiddenLyr = 3	# number of neurons in each hidden layer
 
 # general params
 numEnemies = 10				# number enemy units
+numPrey = 20					# number prey units
 boardWidth = 720				# game width in pixels
 boardHeight = 540			# height
 epochLen = 1000				# timer clicks per generation

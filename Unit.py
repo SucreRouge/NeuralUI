@@ -26,7 +26,6 @@ class Unit:
 		self.boardW = boardW
 		self.boardH = boardH
 		
-		
 	# Input:
 	#		None
 	# Output:
@@ -79,6 +78,16 @@ class Unit:
 	def getDim(self):
 		# return (left right top bottom)
 		return (self.x - 5, self.x + 5, self.y - 5, self.y + 5)
+		
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Return dimensions for drawing this unit
+	def getPreyDim(self):
+		# return (left right top bottom)
+		return (self.x - 3, self.x + 3, self.y - 3, self.y + 3)
 		
 	# Input:
 	#		None
