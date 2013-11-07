@@ -9,6 +9,8 @@ import Common
 import random
 from GeneticAlg import *
 import math
+import numpy as np
+from scipy import spatial
 
 class Controller:
 
@@ -19,11 +21,8 @@ class Controller:
 	# Description:
 	#		Initializes game state and starts app
 	def __init__(self):
-		# create root and canvas
-		root = Tk()
-		self.canvas = Canvas(root, width=Common.boardWidth, height=Common.boardHeight)
-		self.canvas.pack()
-		root.canvas = self.canvas.canvas = self.canvas
+		# initialize tk
+		self.initCanvas()
 		
 		# create units
 		self.player = Unit(random.uniform(0,Common.boardWidth),
@@ -40,6 +39,8 @@ class Controller:
 								0, 0, Common.boardWidth, Common.boardHeight)
 								for i in range(Common.numPrey)]
 								
+		self.preyCoordTree = spatial.cKDTree(np.array([(p.x,p.y) for p in self.prey]))
+								
 		# create AI
 		for e in self.predators: 
 			e.createBrain()
@@ -48,12 +49,28 @@ class Controller:
 		self.genAlg = GenAlg(Common.numEnemies, Common.mutRate, Common.crossRate, 
 										self.predators[0].neuralNet.getNumWeights())
 		
-		# wire events and start loop
+		# other fields and main loop
 		self.killCount = 0
 		self.ticker = 0
-		root.bind("<Key>", self.keyPressed)
+		self.animate = True
+		self.avgFitness = []
+		self.maxFitness = []
 		self.timerFired()
-		root.mainloop()
+		self.root.mainloop()
+		
+	# Input:
+	#		None
+	# Output:
+	#		 None
+	# Description:
+	#		Initializes fields related to tkinter UI library
+	def initCanvas(self):
+		# create root and canvas
+		self.root = Tk()
+		self.canvas = Canvas(self.root, width=Common.boardWidth, height=Common.boardHeight)
+		self.canvas.pack()
+		self.root.canvas = self.canvas.canvas = self.canvas
+		self.root.bind("<Key>", self.keyPressed)
 		
 	# Input:
 	#		event - tkinter keypress even to process
@@ -70,6 +87,8 @@ class Controller:
 			self.player.accX(-1)
 		elif (event.keysym == "Right"):
 			self.player.accX(1)
+		elif (event.keysym == "f"):
+			self.animate = not self.animate
 	
 	# Input:
 	#		None
@@ -79,12 +98,34 @@ class Controller:
 	#		Timer function calls functions to advance game state
 	def timerFired(self):
 		self.moveUnits()
+		self.drawState()
 		self.ticker += 1
 		if (self.ticker > Common.epochLen):
 			self.endEpoch()
-		else:
+		elif (self.animate):
 			delay = Common.delay # milliseconds
 			self.canvas.after(delay, self.timerFired)
+		else:
+			self.root.destroy()
+			self.advanceNoDelay()
+			
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Advances game state without delay or animation
+	def advanceNoDelay(self):
+		while (self.ticker <= Common.epochLen and not self.animate):
+			self.moveUnits()
+			self.ticker += 1
+				
+		if (self.ticker > Common.epochLen):
+			self.endEpoch()
+		else:
+			self.initCanvas()
+			self.timerFired()
+			self.root.mainloop()
 		
 	# Input:
 	#		None
@@ -103,22 +144,23 @@ class Controller:
 			e.accY(output[1])
 			e.advance()
 			# check if distance to nearest is small enough to clear
-			nearest = self.getNearest(e, self.prey)
+			(nearest, index) = self.getNearestPrey(e)
 			if (self.getDist(e.x, e.y, nearest.x, nearest.y) < 10):
 				# increment fitness
 				e.fitness += 1 
 				self.killCount += 1
 
 				# remove prey
-				self.prey.remove(nearest)
+				#self.prey.remove(nearest)
+				self.prey.pop(index)
 				
 				# add new prey
 				self.prey.append(Unit(random.uniform(0,Common.boardWidth),
 											random.uniform(0,Common.boardHeight),
 											0, 0, Common.boardWidth, Common.boardHeight))
-		
-		# draw new state
-		self.drawState()
+											
+				# rebuild cKDTree
+				self.preyCoordTree = spatial.cKDTree(np.array([(p.x,p.y) for p in self.prey]))
 		
 	# Input:
 	#		None
@@ -143,6 +185,8 @@ class Controller:
 		for e in self.predators:
 			(l,r,t,b) =e.getDim()
 			self.canvas.create_rectangle(l, t, r, b, fill="red")
+			(nearest, index) = self.getNearestPrey(e)
+			self.canvas.create_line(e.x, e.y, nearest.x, nearest.y, fill="red", dash=(4,4))
 			
 	# Input:
 	#		e - enemy unit for which to generate NN input
@@ -151,19 +195,26 @@ class Controller:
 	# Description:
 	#		Returns input vector to given unit's Neural Net
 	def getNNInput(self, e):
-		result = []
-		
 		# get vector towards nearest prey
-		nearest = self.getNearest(e, self.prey)
-		preyDir = (nearest.x - e.x, nearest.y - e.y)
+		(nearest, index) = self.getNearestPrey(e)
+		preyDir = [nearest.x - e.x, nearest.y - e.y]
 
 		# and vector of this unit's current direction
-		unitDir = (e.vx, e.vy)
+		unitDir = [e.vx, e.vy]
 		
-		#result = [self.player.x, self.player.y, e.x, e.y]
 		result = [preyDir[0], preyDir[1], unitDir[0], unitDir[1]]
 		
 		return result
+		
+	# Input:
+	#		unit - the unit for which to find the nearest prey
+	# Output:
+	#		(prey, i) - where prey is the nearest prey and i is its index
+	# Description:
+	#		Uses KDTree Nearest Neighbor search to find the prey nearest the given predator unit
+	def getNearestPrey(self, unit):
+		(dist, i) = self.preyCoordTree.query((unit.x, unit.y), k=1)
+		return (self.prey[i], i)
 		
 	# Input:
 	#		unit - unit from which to minimize distance
@@ -171,7 +222,7 @@ class Controller:
 	# Output:
 	#		result - unit in given list nearest the given unit
 	# Description:
-	#		Returns a reference to the unit in the given list nearest the given unit
+	#		Returns a reference to the unit in the given list nearest the given unit, and the index of that unit in self.prey
 	def getNearest(self, unit, listOfUnits):
 		result = listOfUnits[0]
 		dist = Common.boardWidth + Common.boardHeight
@@ -209,7 +260,10 @@ class Controller:
 		# start next epoch
 		self.ticker = 0
 		self.killCount = 0
-		self.timerFired()
+		if (self.animate):
+			self.timerFired()
+		else:
+			self.advanceNoDelay()
 		
 	# Input:
 	#		x1, y1 - coordinates of  point 1
@@ -220,6 +274,20 @@ class Controller:
 	#		Returns euclidean distance between given points
 	def getDist(self, x1, y1, x2, y2):
 		return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+		
+	# Input:
+	#		v - vector to normalize
+	# Output:
+	#		result - normalized copy of given vector
+	# Description:
+	#		Returns a normalized copy of the given vector (2-norm)
+	def normalize(self, v):
+		norm = math.sqrt(sum([x**2 for x in v]))
+		if (norm != 0):
+			result = [x/norm for x in v]
+		else:
+			result = v
+		return result
 		
 # Run app
 if (__name__ == "__main__"):

@@ -5,10 +5,10 @@
 
 # genetic alg params
 maxPerturbation = 0.3		# max value to perturb chromosome weight by
-numElite = 2						# number of ranked elite chromosomes to replicate per generation
+numElite = 1						# number of ranked elite chromosomes to replicate per generation
 numCopiesElite = 3			# number of copies of elite chromosomes to make
-mutRate = 0.25				# probability a given allele will mutate
-crossRate = 0.7				# probability 2 selected chromosomes will cross over
+mutRate = 0.05				# probability a given allele will mutate
+crossRate = 0.4				# probability 2 selected chromosomes will cross over
 
 # neural net params
 numInput = 4					# length of input vector into NeuralNetwork.update() (must also change calls to this in Controller)
