@@ -55,7 +55,7 @@ class Controller:
 		self.animate = True
 		self.avgFitness = []
 		self.maxFitness = []
-		self.timerFired()
+		self.gameLoop()
 		self.root.mainloop()
 		
 	# Input:
@@ -96,37 +96,42 @@ class Controller:
 	#		None
 	# Description:
 	#		Timer function calls functions to advance game state
-	def timerFired(self):
+	def gameLoop(self):
 		self.moveUnits()
 		self.drawState()
 		self.ticker += 1
 		if (self.ticker > Common.epochLen):
 			self.endEpoch()
+			self.gameLoop()
 		elif (self.animate):
 			delay = Common.delay # milliseconds
-			self.canvas.after(delay, self.timerFired)
+			self.canvas.after(delay, self.gameLoop)
 		else:
+			# destroy game canvas and create new plot canvas
 			self.root.destroy()
-			self.advanceNoDelay()
+			self.initCanvas()
+			self.plotLoop()
+			self.root.mainloop()
 			
 	# Input:
 	#		None
 	# Output:
 	#		None
 	# Description:
-	#		Advances game state without delay or animation
-	def advanceNoDelay(self):
-		while (self.ticker <= Common.epochLen and not self.animate):
+	#		Timer function advances simulation state by whole epochs
+	def plotLoop(self):
+		while (self.ticker <= Common.epochLen):
 			self.moveUnits()
 			self.ticker += 1
-				
-		if (self.ticker > Common.epochLen):
-			self.endEpoch()
-		else:
-			self.initCanvas()
-			self.timerFired()
-			self.root.mainloop()
+			
+		self.endEpoch()
 		
+		if (self.animate):
+			self.gameLoop()
+		else:
+			delay = Common.delay
+			self.canvas.after(delay, self.plotLoop)
+			
 	# Input:
 	#		None
 	# Output:
@@ -217,25 +222,6 @@ class Controller:
 		return (self.prey[i], i)
 		
 	# Input:
-	#		unit - unit from which to minimize distance
-	#		listOfUnits - vector of units to search through
-	# Output:
-	#		result - unit in given list nearest the given unit
-	# Description:
-	#		Returns a reference to the unit in the given list nearest the given unit, and the index of that unit in self.prey
-	def getNearest(self, unit, listOfUnits):
-		result = listOfUnits[0]
-		dist = Common.boardWidth + Common.boardHeight
-		
-		for u in listOfUnits:
-			test = self.getDist(unit.x, unit.y, u.x, u.y)
-			if (test < dist):
-				dist = test
-				result = u
-				
-		return result
-		
-	# Input:
 	#		None
 	# Output:
 	#		None
@@ -260,10 +246,6 @@ class Controller:
 		# start next epoch
 		self.ticker = 0
 		self.killCount = 0
-		if (self.animate):
-			self.timerFired()
-		else:
-			self.advanceNoDelay()
 		
 	# Input:
 	#		x1, y1 - coordinates of  point 1
