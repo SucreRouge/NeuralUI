@@ -23,7 +23,7 @@ class Chromosome:
 		return self.fitness == other.fitness
 		
 	def __lt__(self, other):
-		return self.fitness < other.fitness
+		return self.fitness > other.fitness
 		
 class GenAlg:
 

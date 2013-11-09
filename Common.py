@@ -8,7 +8,7 @@ maxPerturbation = 0.3		# max value to perturb chromosome weight by
 numElite = 1						# number of ranked elite chromosomes to replicate per generation
 numCopiesElite = 3			# number of copies of elite chromosomes to make
 mutRate = 0.05				# probability a given allele will mutate
-crossRate = 0.4				# probability 2 selected chromosomes will cross over
+crossRate = 0.3				# probability 2 selected chromosomes will cross over
 
 # neural net params
 numInput = 4					# length of input vector into NeuralNetwork.update() (must also change calls to this in Controller)
@@ -23,3 +23,4 @@ boardWidth = 720				# game width in pixels
 boardHeight = 540			# height
 epochLen = 1000				# timer clicks per generation
 delay = 25						# ms per frame
+numEpochs = 50				# number of epochs simulated before killing app

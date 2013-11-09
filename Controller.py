@@ -11,6 +11,9 @@ from GeneticAlg import *
 import math
 import numpy as np
 from scipy import spatial
+import pylab
+import time
+import sys
 
 class Controller:
 
@@ -21,9 +24,6 @@ class Controller:
 	# Description:
 	#		Initializes game state and starts app
 	def __init__(self):
-		# initialize tk
-		self.initCanvas()
-		
 		# create units
 		self.player = Unit(random.uniform(0,Common.boardWidth),
 									random.uniform(0,Common.boardHeight), 
@@ -49,9 +49,9 @@ class Controller:
 		self.genAlg = GenAlg(Common.numEnemies, Common.mutRate, Common.crossRate, 
 										self.predators[0].neuralNet.getNumWeights())
 		
-		# other fields and main loop
-		self.killCount = 0
-		self.ticker = 0
+		# initialize tk, other fields and main loop
+		self.initCanvas()
+		self.killCount, self.ticker, self.epochs = 0, 0, 0
 		self.animate = True
 		self.avgFitness = []
 		self.maxFitness = []
@@ -88,6 +88,7 @@ class Controller:
 		elif (event.keysym == "Right"):
 			self.player.accX(1)
 		elif (event.keysym == "f"):
+			# end animation and enter simulation
 			self.animate = not self.animate
 	
 	# Input:
@@ -102,16 +103,13 @@ class Controller:
 		self.ticker += 1
 		if (self.ticker > Common.epochLen):
 			self.endEpoch()
-			self.gameLoop()
+			self.canvas.after(Common.delay, self.gameLoop)
 		elif (self.animate):
-			delay = Common.delay # milliseconds
-			self.canvas.after(delay, self.gameLoop)
+			self.canvas.after(Common.delay, self.gameLoop)
 		else:
-			# destroy game canvas and create new plot canvas
+			# destroy game canvas and start pure simulation
 			self.root.destroy()
-			self.initCanvas()
-			self.plotLoop()
-			self.root.mainloop()
+			self.simLoop()
 			
 	# Input:
 	#		None
@@ -119,18 +117,23 @@ class Controller:
 	#		None
 	# Description:
 	#		Timer function advances simulation state by whole epochs
-	def plotLoop(self):
-		while (self.ticker <= Common.epochLen):
-			self.moveUnits()
-			self.ticker += 1
-			
-		self.endEpoch()
+	def simLoop(self):
+	
+		while (self.epochs < Common.numEpochs):
+			# advance epoch
+			while (self.ticker <= Common.epochLen):
+				self.moveUnits()
+				self.ticker += 1
+			self.endEpoch()
+			self.epochs += 1
 		
-		if (self.animate):
-			self.gameLoop()
-		else:
-			delay = Common.delay
-			self.canvas.after(delay, self.plotLoop)
+		# generate fitness plot
+		pylab.plot(range(len(self.avgFitness)), self.avgFitness, 'b--', range(len(self.maxFitness)), self.maxFitness, 'r--')
+		pylab.xlabel('epoch')
+		pylab.ylabel('fitness')
+		pylab.savefig('fitness.png')
+		
+		sys.exit()
 			
 	# Input:
 	#		None
@@ -156,7 +159,6 @@ class Controller:
 				self.killCount += 1
 
 				# remove prey
-				#self.prey.remove(nearest)
 				self.prey.pop(index)
 				
 				# add new prey
@@ -206,7 +208,6 @@ class Controller:
 
 		# and vector of this unit's current direction
 		unitDir = [e.vx, e.vy]
-		
 		result = [preyDir[0], preyDir[1], unitDir[0], unitDir[1]]
 		
 		return result
@@ -228,10 +229,16 @@ class Controller:
 	# Description:
 	#		Runs GA to evolve NN weights and restarts game
 	def endEpoch(self):
-		# print fitnesses
+		# store fitnesses
+		fitness = []
 		for e in self.predators:
-			print(e.fitness)
-		print("Total eaten: " + str(self.killCount))
+			fitness.append(e.fitness)
+		
+		self.avgFitness.append(sum(fitness)/len(fitness))
+		self.maxFitness.append(max(fitness))
+		
+		print("Average fitness: " + str(self.avgFitness[-1]))
+		print("Maximum fitness: " + str(self.maxFitness[-1]))
 		print()
 		
 		# run GA on population of enemies
