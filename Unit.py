@@ -22,9 +22,15 @@ class Unit:
 		self.y = y
 		self.vx = vx
 		self.vy = vy
-		self.maxVel = 5
+		self.maxVel = Common.maxVel
 		self.boardW = boardW
 		self.boardH = boardH
+		
+	def __eq__(self, other):
+		return self.fitness == other.fitness
+		
+	def __lt__(self, other):
+		return self.fitness > other.fitness
 		
 	# Input:
 	#		None

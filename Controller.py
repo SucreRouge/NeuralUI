@@ -14,6 +14,7 @@ from scipy import spatial
 import pylab
 import time
 import sys
+import ast
 
 class Controller:
 
@@ -23,7 +24,7 @@ class Controller:
 	#		None
 	# Description:
 	#		Initializes game state and starts app
-	def __init__(self):
+	def __init__(self, importFlag=False):
 		# create units
 		self.player = Unit(random.uniform(0,Common.boardWidth),
 									random.uniform(0,Common.boardHeight), 
@@ -41,9 +42,20 @@ class Controller:
 								
 		self.preyCoordTree = spatial.cKDTree(np.array([(p.x,p.y) for p in self.prey]))
 								
+		
+								
 		# create AI
 		for e in self.predators: 
 			e.createBrain()
+			
+		if (importFlag):
+			# import weights from file
+			with open('weights.txt','r') as f:
+				content = f.readlines()
+				importWeights = [ast.literal_eval(lst) for lst in content]
+			
+			for p in self.predators:
+				p.neuralNet.putWeights(random.choice(importWeights))
 		
 		# wrapper class for GA functionality
 		self.genAlg = GenAlg(Common.numEnemies, Common.mutRate, Common.crossRate, 
@@ -103,9 +115,14 @@ class Controller:
 		self.ticker += 1
 		if (self.ticker > Common.epochLen):
 			self.endEpoch()
+			self.epochs += 1
 			self.canvas.after(Common.delay, self.gameLoop)
 		elif (self.animate):
 			self.canvas.after(Common.delay, self.gameLoop)
+		elif (self.epochs >= Common.numEpochs):
+			self.genPlot()
+			self.root.destroy()
+			sys.exit()
 		else:
 			# destroy game canvas and start pure simulation
 			self.root.destroy()
@@ -128,11 +145,17 @@ class Controller:
 			self.epochs += 1
 		
 		# generate fitness plot
-		pylab.plot(range(len(self.avgFitness)), self.avgFitness, 'b--', range(len(self.maxFitness)), self.maxFitness, 'r--')
-		pylab.xlabel('epoch')
-		pylab.ylabel('fitness')
-		pylab.savefig('fitness.png')
+		self.genPlot()
 		
+		# export data to text file
+		f = open('weights.txt', 'w')
+		for i in range(Common.numElite):
+			netWeights = self.predators[i].neuralNet.getWeights()
+			f.write(str(netWeights) + '\n')
+			
+		f.close()
+		
+		# exit app
 		sys.exit()
 			
 	# Input:
@@ -169,6 +192,9 @@ class Controller:
 				# rebuild cKDTree
 				self.preyCoordTree = spatial.cKDTree(np.array([(p.x,p.y) for p in self.prey]))
 		
+		# sort predators WRT fitness to keep track of most fit
+		self.predators.sort()
+		
 	# Input:
 	#		None
 	# Output:
@@ -189,9 +215,14 @@ class Controller:
 			self.canvas.create_rectangle(l, t, r, b, fill="green")
 		
 		# draw predators
-		for e in self.predators:
+		for i in range(len(self.predators)):
+			e = self.predators[i]
 			(l,r,t,b) =e.getDim()
-			self.canvas.create_rectangle(l, t, r, b, fill="red")
+			if (i < Common.numElite):
+				# draw most fit preds in purple
+				self.canvas.create_rectangle(l, t, r, b, fill="orange")
+			else:
+				self.canvas.create_rectangle(l, t, r, b, fill="red")
 			(nearest, index) = self.getNearestPrey(e)
 			self.canvas.create_line(e.x, e.y, nearest.x, nearest.y, fill="red", dash=(4,4))
 			
@@ -204,6 +235,7 @@ class Controller:
 	def getNNInput(self, e):
 		# get vector towards nearest prey
 		(nearest, index) = self.getNearestPrey(e)
+		#nearest = self.player
 		preyDir = [nearest.x - e.x, nearest.y - e.y]
 
 		# and vector of this unit's current direction
@@ -236,7 +268,8 @@ class Controller:
 		
 		self.avgFitness.append(sum(fitness)/len(fitness))
 		self.maxFitness.append(max(fitness))
-		
+	
+		print("Generation " + str(self.epochs))
 		print("Average fitness: " + str(self.avgFitness[-1]))
 		print("Maximum fitness: " + str(self.maxFitness[-1]))
 		print()
@@ -278,9 +311,21 @@ class Controller:
 			result = v
 		return result
 		
+	# Input:
+	#		None
+	# Output:
+	#		None
+	# Description:
+	#		Plots fitness of generations after simulation is complete
+	def genPlot(self):
+		pylab.plot(range(len(self.avgFitness)), self.avgFitness, 'b--', range(len(self.maxFitness)), self.maxFitness, 'r--')
+		pylab.xlabel('epoch')
+		pylab.ylabel('fitness')
+		pylab.savefig('fitness.png')
+		
 # Run app
 if (__name__ == "__main__"):
-	c = Controller()
+	c = Controller(Common.importFlag)
 
 
 
