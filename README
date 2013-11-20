@@ -1,4 +1,5 @@
 Briar Doty
+Python implementation of tutorial at http://www.ai-junkie.com/ann/evolved/nnt1.html
 
 Dependencies:
 Scipy stack
