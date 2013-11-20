@@ -1,7 +1,7 @@
 # Briar Doty
 # Oct 2013
 # Controller.py
-# Wires units together into 2d demo/game
+# Wires units together into 2d simulation/game
 
 from tkinter import *
 from Unit import Unit
@@ -41,9 +41,7 @@ class Controller:
 								for i in range(Common.numPrey)]
 								
 		self.preyCoordTree = spatial.cKDTree(np.array([(p.x,p.y) for p in self.prey]))
-								
-		
-								
+										
 		# create AI
 		for e in self.predators: 
 			e.createBrain()
@@ -63,7 +61,7 @@ class Controller:
 		
 		# initialize tk, other fields and main loop
 		self.initCanvas()
-		self.killCount, self.ticker, self.epochs = 0, 0, 0
+		self.ticker, self.epochs = 0, 0
 		self.animate = True
 		self.avgFitness = []
 		self.maxFitness = []
@@ -91,6 +89,7 @@ class Controller:
 	# Description:
 	#		Accepts user arrow-key input and translates to unit acceleration
 	def keyPressed(self, event):
+		# move player unit
 		if (event.keysym == "Up"):
 			self.player.accY(-1)
 		elif (event.keysym == "Down"):
@@ -110,16 +109,21 @@ class Controller:
 	# Description:
 	#		Timer function calls functions to advance game state
 	def gameLoop(self):
+		# advance state
 		self.moveUnits()
 		self.drawState()
 		self.ticker += 1
+		
 		if (self.ticker > Common.epochLen):
+			# this epoch is over
 			self.endEpoch()
 			self.epochs += 1
 			self.canvas.after(Common.delay, self.gameLoop)
 		elif (self.animate):
+			# continue advancing state
 			self.canvas.after(Common.delay, self.gameLoop)
 		elif (self.epochs >= Common.numEpochs):
+			# simulation over
 			self.genPlot()
 			self.root.destroy()
 			sys.exit()
@@ -178,8 +182,7 @@ class Controller:
 			(nearest, index) = self.getNearestPrey(e)
 			if (self.getDist(e.x, e.y, nearest.x, nearest.y) < 10):
 				# increment fitness
-				e.fitness += 1 
-				self.killCount += 1
+				e.fitness += 1
 
 				# remove prey
 				self.prey.pop(index)
@@ -285,7 +288,6 @@ class Controller:
 		
 		# start next epoch
 		self.ticker = 0
-		self.killCount = 0
 		
 	# Input:
 	#		x1, y1 - coordinates of  point 1

@@ -1,1 +1,13 @@
 Briar Doty
+
+Dependencies:
+Scipy stack
+
+To run:
+- Alter parameter values in Common.py (some require altering other files, described in comments)
+- Execute Controller.py
+- Press "F" key during game to enter accelerated simulation that generates weights and fitness plot at the end.
+
+Feature ideas for further development:
+- Multiprocessing
+- Optimize params for maximum fitness over N generations
